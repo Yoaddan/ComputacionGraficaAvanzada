@@ -30,6 +30,9 @@
 
 #include "Headers/Texture.h"
 
+//Include terrain class
+#include "Headers/Terrain.h"
+
 // Include loader Model class
 #include "Headers/Model.h"
 
@@ -98,6 +101,10 @@ Model cowboyModelAnimate;
 Model guardianModelAnimate;
 // Cybog
 Model cyborgModelAnimate;
+// Naoya
+Model modelNaoya;
+
+Terrain terreno(-1,-1,50,32,"../textures/mapaPractica.png");
 
 GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID, textureLandingPadID;
 GLuint skyboxTextureID;
@@ -133,7 +140,10 @@ glm::mat4 modelMatrixMayow = glm::mat4(1.0f);
 glm::mat4 modelMatrixCowboy = glm::mat4(1.0f);
 glm::mat4 modelMatrixGuardian = glm::mat4(1.0f);
 glm::mat4 modelMatrixCyborg = glm::mat4(1.0f);
+glm::mat4 modelMatrixNaoya = glm::mat4(1.0f);
 
+// Definimos indice de reposo de modelo animado practica 2
+int animationNaoyaIndex = 2;
 int animationMayowIndex = 1;
 float rotDartHead = 0.0, rotDartLeftArm = 0.0, rotDartLeftHand = 0.0, rotDartRightArm = 0.0, rotDartRightHand = 0.0, rotDartLeftLeg = 0.0, rotDartRightLeg = 0.0;
 float rotBuzzHead = 0.0, rotBuzzLeftarm = 0.0, rotBuzzLeftForeArm = 0.0, rotBuzzLeftHand = 0.0;
@@ -362,6 +372,16 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	cyborgModelAnimate.loadModel("../models/cyborg/cyborg.fbx");
 	cyborgModelAnimate.setShader(&shaderMulLighting);
 
+	// Naoya
+	modelNaoya.loadModel("../models/naoya/naoya.fbx");
+	modelNaoya.setShader(&shaderMulLighting);
+
+
+	// Terreno
+	terreno.init();
+	terreno.setShader(&shaderMulLighting);
+
+
 	camera->setPosition(glm::vec3(0.0, 3.0, 4.0));
 	
 	// Carga de texturas para el skybox
@@ -577,6 +597,8 @@ void destroy() {
 	cowboyModelAnimate.destroy();
 	guardianModelAnimate.destroy();
 	cyborgModelAnimate.destroy();
+	modelNaoya.destroy();
+	terreno.destroy();
 
 	// Textures Delete
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -654,7 +676,7 @@ bool processInput(bool continueApplication) {
 	if (enableCountSelected && glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS){
 		enableCountSelected = false;
 		modelSelected++;
-		if(modelSelected > 4)
+		if(modelSelected > 5)
 			modelSelected = 0;
 		if(modelSelected == 1)
 			fileName = "../animaciones/animation_dart_joints.txt";
@@ -799,6 +821,24 @@ bool processInput(bool continueApplication) {
 		animationMayowIndex = 0;
 	}
 
+		// Controles de Naoya
+	if (modelSelected == 5 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
+		modelMatrixNaoya = glm::rotate(modelMatrixNaoya, 0.02f, glm::vec3(0, 1, 0));
+		animationNaoyaIndex = 0;
+	}
+	else if (modelSelected == 5 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
+		modelMatrixNaoya = glm::rotate(modelMatrixNaoya, -0.02f, glm::vec3(0, 1, 0));
+		animationNaoyaIndex = 0;
+	}
+	if (modelSelected == 5 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
+		modelMatrixNaoya = glm::translate(modelMatrixNaoya, glm::vec3(0.0, 0.0, 0.02));
+		animationNaoyaIndex = 0;
+	}
+	else if (modelSelected == 5 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
+		modelMatrixNaoya = glm::translate(modelMatrixNaoya, glm::vec3(0.0, 0.0, -0.02));
+		animationNaoyaIndex = 0;
+	}
+
 	glfwPollEvents();
 	return continueApplication;
 }
@@ -822,7 +862,7 @@ void applicationLoop() {
 
 	modelMatrixAircraft = glm::translate(modelMatrixAircraft, glm::vec3(10.0, 2.0, -17.5));
 
-	modelMatrixLambo = glm::translate(modelMatrixLambo, glm::vec3(23.0, 0.0, 0.0));
+	modelMatrixLambo = glm::translate(modelMatrixLambo, glm::vec3(13.0, 0.0, 0.0));
 
 	modelMatrixDart = glm::translate(modelMatrixDart, glm::vec3(3.0, 0.0, 20.0));
 
@@ -837,6 +877,8 @@ void applicationLoop() {
 	modelMatrixGuardian = glm::rotate(modelMatrixGuardian, glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0));
 
 	modelMatrixCyborg = glm::translate(modelMatrixCyborg, glm::vec3(5.0f, 0.05, 0.0f));
+
+	modelMatrixNaoya = glm::translate(modelMatrixNaoya, glm::vec3(15.0f, 0.03f, -10.0f));
 
 	// Variables to interpolation key frames
 	fileName = "../animaciones/animation_dart_joints.txt";
@@ -907,7 +949,7 @@ void applicationLoop() {
 		/*******************************************
 		 * Cesped
 		 *******************************************/
-		glm::mat4 modelCesped = glm::mat4(1.0);
+		/*glm::mat4 modelCesped = glm::mat4(1.0);
 		modelCesped = glm::translate(modelCesped, glm::vec3(0.0, 0.0, 0.0));
 		modelCesped = glm::scale(modelCesped, glm::vec3(200.0, 0.001, 200.0));
 		// Se activa la textura del agua
@@ -917,16 +959,31 @@ void applicationLoop() {
 		boxCesped.render(modelCesped);
 		shaderMulLighting.setVectorFloat2("scaleUV", glm::value_ptr(glm::vec2(0, 0)));
 		glBindTexture(GL_TEXTURE_2D, 0);
+		*/
+
+		// Terreno
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textureCespedID);
+		terreno.setPosition(glm::vec3(25.0f,0.0f,25.0f));
+		//terreno.enableWireMode();
+		shaderMulLighting.setVectorFloat2("scaleUV", glm::value_ptr(glm::vec2(50.0f)));
+		terreno.render();
+		shaderMulLighting.setVectorFloat2("scaleUV", glm::value_ptr(glm::vec2(1.0f)));
+		//terreno.enableFillMode();
+		glBindTexture(GL_TEXTURE_2D, 0);		
+
 
 		/*******************************************
 		 * Custom objects obj
 		 *******************************************/
 		//Rock render
+		matrixModelRock[3][1] = terreno.getHeightTerrain(matrixModelRock[3][0], matrixModelRock[3][2]);
 		modelRock.render(matrixModelRock);
 		// Forze to enable the unit texture to 0 always ----------------- IMPORTANT
 		glActiveTexture(GL_TEXTURE0);
 
 		// Render for the aircraft model
+		modelMatrixAircraft[3][1] = terreno.getHeightTerrain(modelMatrixAircraft[3][0],modelMatrixAircraft[3][2]);
 		modelAircraft.render(modelMatrixAircraft);
 
 		// Render for the eclipse car
@@ -964,8 +1021,54 @@ void applicationLoop() {
 
 		// Lambo car
 		glDisable(GL_CULL_FACE);
+
+		// Definir los cuatro puntos de apoyo del Lamborghini en su chasis
+		glm::vec3 supportPoints[4] = {
+			glm::vec3(0.9557, -0.3826, 1.387),   // Punto delantero izquierdo
+			glm::vec3(-0.9557, -0.3826, 1.387),    // Punto delantero derecho
+			glm::vec3(0.9557, -0.3826, -1.613),  // Punto trasero izquierdo
+			glm::vec3(-0.9557, -0.3826, -1.613)    // Punto trasero derecho
+		};
+
+		// Calcular la altura del terreno en cada punto de apoyo
+		float terrainHeights[4];
+		for (int i = 0; i < 4; ++i) {
+			terrainHeights[i] = terreno.getHeightTerrain(supportPoints[i].x, supportPoints[i].z);
+			supportPoints[i][1] = terrainHeights[i];
+			printf("Support Point %d: (%f, %f, %f)\n", i, supportPoints[i].x, supportPoints[i].y, supportPoints[i].z);
+		}
+
 		glm::mat4 modelMatrixLamboChasis = glm::mat4(modelMatrixLambo);
 		modelMatrixLamboChasis = glm::scale(modelMatrixLamboChasis, glm::vec3(1.3, 1.3, 1.3));
+		
+		modelMatrixLamboChasis[3][1] = terreno.getHeightTerrain(modelMatrixLamboChasis[3][0], modelMatrixLamboChasis[3][2]);
+		
+		// Calcular los vectores del terreno para calcular el vector normal
+		glm::vec3 vector1 = supportPoints[2] - supportPoints[0];
+		glm::vec3 vector2 = supportPoints[3] - supportPoints[1];
+
+		// Imprimir los vectores para depurar
+		printf("Vector 1: (%f, %f, %f)\n", vector1.x, vector1.y, vector1.z);
+		printf("Vector 2: (%f, %f, %f)\n", vector2.x, vector2.y, vector2.z);
+
+		// Calcular el vector normal del terreno
+		glm::vec3 normalambo = glm::normalize(glm::cross(vector1, vector2));
+
+		// Imprimir el vector normal para depurar
+		printf("Vector Normal: (%f, %f, %f)\n", normalambo.x, normalambo.y, normalambo.z);
+
+		// Calcular la pendiente del terreno en relación con el eje Y
+		float slopeAngleY = glm::degrees(glm::acos(glm::dot(normalambo, glm::vec3(0, 1, 0))));
+
+		// Calcular la pendiente del terreno en relación con el eje Z
+		float slopeAngleZ = glm::degrees(glm::acos(glm::dot(normalambo, glm::vec3(0, 0, 1))));
+
+		printf("Slope angle Z %f\n", slopeAngleZ);
+		printf("Slope angle Y %f\n", slopeAngleY);
+		
+		// Ajustar la orientación del chasis del Lamborghini en función de la pendiente
+		modelMatrixLamboChasis = glm::rotate(modelMatrixLamboChasis, glm::radians(slopeAngleY/4), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelMatrixLamboChasis = glm::rotate(modelMatrixLamboChasis, glm::radians(slopeAngleZ/4), glm::vec3(0.0f, 0.0f, 1.0f));
 		modelLambo.render(modelMatrixLamboChasis);
 		glActiveTexture(GL_TEXTURE0);
 		glm::mat4 modelMatrixLamboLeftDor = glm::mat4(modelMatrixLamboChasis);
@@ -1066,6 +1169,13 @@ void applicationLoop() {
 		/*****************************************
 		 * Objetos animados por huesos
 		 * **************************************/
+		glm::vec3 normal = terreno.getNormalTerrain(modelMatrixMayow[3][0], modelMatrixMayow[3][2]);
+		glm::vec3 ejex = glm::vec3(modelMatrixMayow[0]);
+		glm::vec3 ejez = glm::normalize(glm::cross(ejex, normal));
+		ejex = glm::normalize(glm::cross(normal, ejez));
+		modelMatrixMayow[0] = glm::vec4(ejex, 0.0f);
+		modelMatrixMayow[1] = glm::vec4(normal, 0.0f);
+		modelMatrixMayow[3][1] = terreno.getHeightTerrain(modelMatrixMayow[3][0], modelMatrixMayow[3][2]);
 		glm::mat4 modelMatrixMayowBody = glm::mat4(modelMatrixMayow);
 		modelMatrixMayowBody = glm::scale(modelMatrixMayowBody, glm::vec3(0.021f));
 		mayowModelAnimate.setAnimationIndex(animationMayowIndex);
@@ -1084,6 +1194,19 @@ void applicationLoop() {
 		modelMatrixCyborgBody = glm::scale(modelMatrixCyborgBody, glm::vec3(0.009f));
 		cyborgModelAnimate.setAnimationIndex(1);
 		cyborgModelAnimate.render(modelMatrixCyborgBody);
+
+		normal = terreno.getNormalTerrain(modelMatrixNaoya[3][0], modelMatrixNaoya[3][	2]);
+		ejex = glm::vec3(modelMatrixNaoya[0]);
+		ejez = glm::normalize(glm::cross(ejex,normal));
+		ejex = glm::normalize(glm::cross(normal,ejez));
+		modelMatrixNaoya[0] = glm::vec4(ejex,0.0f);
+		modelMatrixNaoya[1] = glm::vec4(normal,0.0f);
+		modelMatrixNaoya[3][1] = terreno.getHeightTerrain(modelMatrixNaoya[3][0], modelMatrixNaoya[3][2]);
+		glm::mat4 modelMatrixNaoyaBody = glm::mat4(modelMatrixNaoya);
+		modelMatrixNaoyaBody = glm::scale(modelMatrixNaoyaBody, glm::vec3(0.005f));
+		modelNaoya.setAnimationIndex(animationNaoyaIndex);
+		modelNaoya.render(modelMatrixNaoyaBody);
+		animationNaoyaIndex = 2;
 
 		/*******************************************
 		 * Skybox

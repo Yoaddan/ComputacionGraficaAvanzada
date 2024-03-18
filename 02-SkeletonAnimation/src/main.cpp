@@ -90,6 +90,13 @@ Model modelBuzzLeftArm;
 Model modelBuzzLeftForeArm;
 Model modelBuzzLeftHand;
 
+// Modelo animado
+Model modelCyborg;
+Model modelMay;
+Model modelCowboy;
+Model modelBob;
+Model modelNaoya;
+
 GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID, textureLandingPadID;
 GLuint skyboxTextureID;
 
@@ -101,12 +108,12 @@ GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
 GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
 GL_TEXTURE_CUBE_MAP_NEGATIVE_Z };
 
-std::string fileNames[6] = { "../Textures/mp_bloodvalley/blood-valley_ft.tga",
-		"../Textures/mp_bloodvalley/blood-valley_bk.tga",
-		"../Textures/mp_bloodvalley/blood-valley_up.tga",
-		"../Textures/mp_bloodvalley/blood-valley_dn.tga",
-		"../Textures/mp_bloodvalley/blood-valley_rt.tga",
-		"../Textures/mp_bloodvalley/blood-valley_lf.tga" };
+std::string fileNames[6] = { "../Textures/envmap_stormydays/stormydays_ft.tga",
+		"../Textures/envmap_stormydays/stormydays_bk.tga",
+		"../Textures/envmap_stormydays/stormydays_up.tga",
+		"../Textures/envmap_stormydays/stormydays_dn.tga",
+		"../Textures/envmap_stormydays/stormydays_rt.tga",
+		"../Textures/envmap_stormydays/stormydays_lf.tga" };
 
 bool exitApp = false;
 int lastMousePosX, offsetX = 0;
@@ -120,7 +127,14 @@ glm::mat4 modelMatrixLambo = glm::mat4(1.0);
 glm::mat4 modelMatrixAircraft = glm::mat4(1.0);
 glm::mat4 modelMatrixDart = glm::mat4(1.0f);
 glm::mat4 modelMatrixBuzz = glm::mat4(1.0f);
+glm::mat4 modelMatrixCyborg = glm::mat4(1.0f);
+glm::mat4 modelMatrixMay = glm::mat4(1.0f);
+glm::mat4 modelMatrixCowboy = glm::mat4(1.0f);
+glm::mat4 modelMatrixBob = glm::mat4(1.0f);
+glm::mat4 modelMatrixNaoya = glm::mat4(1.0f);
 
+// Definimos indice de reposo de modelo animado practica 2
+int animationNaoyaIndex = 2;
 float rotDartHead = 0.0, rotDartLeftArm = 0.0, rotDartLeftHand = 0.0, rotDartRightArm = 0.0, rotDartRightHand = 0.0, rotDartLeftLeg = 0.0, rotDartRightLeg = 0.0;
 float rotBuzzHead = 0.0, rotBuzzLeftarm = 0.0, rotBuzzLeftForeArm = 0.0, rotBuzzLeftHand = 0.0;
 int modelSelected = 0;
@@ -331,6 +345,18 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	modelBuzzLeftForeArm.setShader(&shaderMulLighting);
 	modelBuzzLeftHand.loadModel("../models/buzz/buzzlightyLeftHand.obj");
 	modelBuzzLeftHand.setShader(&shaderMulLighting);
+
+	// Modelos animados
+	modelCyborg.loadModel("../models/cyborg/cyborg.fbx");
+	modelCyborg.setShader(&shaderMulLighting);
+	modelMay.loadModel("../models/mayow/personaje2.fbx");
+	modelMay.setShader(&shaderMulLighting);
+	modelCowboy.loadModel("../models/cowboy/Character Running.fbx");
+	modelCowboy.setShader(&shaderMulLighting);
+	modelCowboy.loadModel("../models/boblampclean/boblampclean.md5anim");
+	modelCowboy.setShader(&shaderMulLighting);
+	modelNaoya.loadModel("../models/naoya/naoya.fbx");
+	modelNaoya.setShader(&shaderMulLighting);
 
 	camera->setPosition(glm::vec3(0.0, 3.0, 4.0));
 	
@@ -543,6 +569,11 @@ void destroy() {
 	modelBuzzLeftForeArm.destroy();
 	modelBuzzLeftHand.destroy();
 	modelBuzzTorso.destroy();
+	modelCowboy.destroy();
+	modelCyborg.destroy();
+	modelBob.destroy();
+	modelMay.destroy();
+	modelNaoya.destroy();
 
 	// Textures Delete
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -748,7 +779,25 @@ bool processInput(bool continueApplication) {
 	else if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		modelMatrixBuzz = glm::translate(modelMatrixBuzz, glm::vec3(0.0, 0.0, -0.02));
 
+	// Controles de Naoya
+	if (modelSelected == 0 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
+		modelMatrixNaoya = glm::rotate(modelMatrixNaoya, 0.02f, glm::vec3(0, 1, 0));
+		animationNaoyaIndex = 0;
+	}
+	else if (modelSelected == 0 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
+		modelMatrixNaoya = glm::rotate(modelMatrixNaoya, -0.02f, glm::vec3(0, 1, 0));
+		animationNaoyaIndex = 0;
+	}
+	if (modelSelected == 0 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
+		modelMatrixNaoya = glm::translate(modelMatrixNaoya, glm::vec3(0.0, 0.0, 0.02));
+		animationNaoyaIndex = 0;
+	}
+	else if (modelSelected == 0 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
+		modelMatrixNaoya = glm::translate(modelMatrixNaoya, glm::vec3(0.0, 0.0, -0.02));
+		animationNaoyaIndex = 0;
+	}
 	glfwPollEvents();
+
 	return continueApplication;
 }
 
@@ -776,6 +825,16 @@ void applicationLoop() {
 	modelMatrixDart = glm::translate(modelMatrixDart, glm::vec3(3.0, 0.0, 20.0));
 
 	modelMatrixBuzz = glm::translate(modelMatrixBuzz, glm::vec3(15.0, 0.0, -10.0));
+
+	modelMatrixCyborg = glm::translate(modelMatrixCyborg,  glm::vec3(15.0f,0.03f,0.0f));
+
+	modelMatrixMay = glm::translate(modelMatrixMay,  glm::vec3(15.0f,0.03f,-5.0f));
+
+	modelMatrixCowboy = glm::translate(modelMatrixCowboy,  glm::vec3(15.0f,0.03f,0.0f));
+
+	modelMatrixBob = glm::translate(modelMatrixBob,  glm::vec3(15.0f,0.03f,0.0f));
+
+	modelMatrixNaoya = glm::translate(modelMatrixNaoya, glm::vec3(15.0f, 0.03f, -10.0f));
 
 	// Variables to interpolation key frames
 	fileName = "../animaciones/animation_dart_joints.txt";
@@ -1112,6 +1171,23 @@ void applicationLoop() {
 		modelMatrixLeftHand = glm::translate(modelMatrixLeftHand, glm::vec3(-0.416066, -0.587046, -0.076258));
 		modelBuzzLeftHand.render(modelMatrixLeftHand);
 
+		// Render de los modelos animados
+		
+		glm::mat4 modelMatrixCyborgBody = glm::mat4(modelMatrixCyborg);
+		modelMatrixCyborgBody = glm::scale(modelMatrixCyborgBody, glm::vec3(0.005f));
+		modelCyborg.setAnimationIndex(1);
+		modelCyborg.render(modelMatrixCyborgBody);
+
+		glm::mat4 modelMatrixMayBody = glm::mat4(modelMatrixMay);
+		modelMatrixMayBody = glm::scale(modelMatrixMayBody, glm::vec3(0.05f));
+		modelMay.setAnimationIndex(1);
+		modelMay.render(modelMatrixMayBody);
+
+		glm::mat4 modelMatrixNaoyaBody = glm::mat4(modelMatrixNaoya);
+		modelMatrixNaoyaBody = glm::scale(modelMatrixNaoyaBody, glm::vec3(0.005f));
+		modelNaoya.setAnimationIndex(animationNaoyaIndex);
+		modelNaoya.render(modelMatrixNaoyaBody);
+		animationNaoyaIndex = 2;
 		/*******************************************
 		 * Skybox
 		 *******************************************/
