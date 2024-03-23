@@ -48,6 +48,8 @@ Shader shaderSkybox;
 //Shader con multiples luces
 Shader shaderMulLighting;
 
+Shader shaderMulLighting2;
+
 std::shared_ptr<FirstPersonCamera> camera(new FirstPersonCamera());
 
 Sphere skyboxSphere(20, 20);
@@ -56,6 +58,7 @@ Box boxWalls;
 Box boxHighway;
 Box boxLandingPad;
 Sphere esfera1(10, 10);
+Box cubo;
 // Models complex instances
 Model modelRock;
 Model modelAircraft;
@@ -108,7 +111,7 @@ Model modelBuzzRightWing1;
 Model modelBuzzLeftWing2;
 Model modelBuzzRightWing2;
 
-GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID, textureLandingPadID, texturePokeballID, textureHealingMachineBodyID;
+GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID, textureLandingPadID, texturePokeballID, textureHealingMachineBodyID, textureCuboWaterID, textureCuboSpongeID;
 GLuint skyboxTextureID;
 
 GLenum types[6] = {
@@ -265,6 +268,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	shader.initialize("../Shaders/colorShader.vs", "../Shaders/colorShader.fs");
 	shaderSkybox.initialize("../Shaders/skyBox.vs", "../Shaders/skyBox.fs");
 	shaderMulLighting.initialize("../Shaders/iluminacion_texture_res.vs", "../Shaders/multipleLights.fs");
+	shaderMulLighting2.initialize("../Shaders/iluminacion_texture_res.vs","../Shaders/multipleLights2.fs");
 
 	// Inicializacion de los objetos.
 	skyboxSphere.init();
@@ -285,6 +289,9 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 
 	esfera1.init();
 	esfera1.setShader(&shaderMulLighting);
+
+	cubo.init();
+	cubo.setShader(&shaderMulLighting2);
 
 	modelRock.loadModel("../models/rock/rock.obj");
 	modelRock.setShader(&shaderMulLighting);
@@ -589,6 +596,44 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 		std::cout << "Fallo la carga de textura" << std::endl;
 	textureHealingMachineBody.freeImage(); // Liberamos memoria
 
+	// Definiendo la textura del cubo
+	Texture textureCuboWater("../Textures/water.jpg");
+	textureCuboWater.loadImage(); // Cargar la textura
+	glGenTextures(1, &textureCuboWaterID); // Creando el id de la textura 
+	glBindTexture(GL_TEXTURE_2D, textureCuboWaterID); // Se enlaza la textura
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // Wrapping en el eje u
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); // Wrapping en el eje v
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // Filtering de minimización
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // Filtering de maximimizacion
+	if(textureCuboWater.getData()){
+		// Transferir los datos de la imagen a la tarjeta
+		glTexImage2D(GL_TEXTURE_2D, 0, textureCuboWater.getChannels() == 3 ? GL_RGB : GL_RGBA, textureCuboWater.getWidth(), textureCuboWater.getHeight(), 0,
+		textureCuboWater.getChannels() == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, textureCuboWater.getData());
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else 
+		std::cout << "Fallo la carga de textura" << std::endl;
+	textureCuboWater.freeImage(); // Liberamos memoria
+
+	// Definiendo la textura del cubo
+	Texture textureCuboSponge("../Textures/sponge.jpg");
+	textureCuboSponge.loadImage(); // Cargar la textura
+	glGenTextures(1, &textureCuboSpongeID); // Creando el id de la textura
+	glBindTexture(GL_TEXTURE_2D, textureCuboSpongeID); // Se enlaza la textura
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // Wrapping en el eje u
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); // Wrapping en el eje v
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // Filtering de minimización
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // Filtering de maximimizacion
+	if(textureCuboSponge.getData()){
+		// Transferir los datos de la imagen a la tarjeta
+		glTexImage2D(GL_TEXTURE_2D, 0, textureCuboSponge.getChannels() == 3 ? GL_RGB : GL_RGBA, textureCuboSponge.getWidth(), textureCuboSponge.getHeight(), 0,
+		textureCuboSponge.getChannels() == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, textureCuboSponge.getData());
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else 
+		std::cout << "Fallo la carga de textura" << std::endl;
+	textureCuboSponge.freeImage(); // Liberamos memoria
+
 }
 
 void destroy() {
@@ -601,6 +646,7 @@ void destroy() {
 	shader.destroy();
 	shaderMulLighting.destroy();
 	shaderSkybox.destroy();
+	shaderMulLighting2.destroy();
 
 	// Basic objects Delete
 	skyboxSphere.destroy();
@@ -609,6 +655,7 @@ void destroy() {
 	boxHighway.destroy();
 	boxLandingPad.destroy();
 	esfera1.destroy();
+	cubo.destroy();
 
 	// Custom objects Delete
 	modelAircraft.destroy();
@@ -667,6 +714,8 @@ void destroy() {
 	glDeleteTextures(1, &textureLandingPadID);
 	glDeleteTextures(1, &texturePokeballID);
 	glDeleteTextures(1, &textureHealingMachineBodyID);
+	glDeleteTextures(1, &textureCuboWaterID);
+	glDeleteTextures(1, &textureCuboSpongeID);
 
 	// Cube Maps Delete
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
@@ -1045,6 +1094,11 @@ void applicationLoop() {
 					glm::value_ptr(projection));
 		shaderMulLighting.setMatrix4("view", 1, false,
 				glm::value_ptr(view));
+		// Settea la matriz de vista y projection al shader con multiples luces 2
+		shaderMulLighting2.setMatrix4("projection", 1, false,
+					glm::value_ptr(projection));
+		shaderMulLighting2.setMatrix4("view", 1, false,
+				glm::value_ptr(view));
 
 		/*******************************************
 		 * Propiedades Luz direccional
@@ -1055,15 +1109,26 @@ void applicationLoop() {
 		shaderMulLighting.setVectorFloat3("directionalLight.light.specular", glm::value_ptr(glm::vec3(0.9, 0.9, 0.9)));
 		shaderMulLighting.setVectorFloat3("directionalLight.direction", glm::value_ptr(glm::vec3(-1.0, 0.0, 0.0)));
 
+		shaderMulLighting2.setVectorFloat3("viewPos", glm::value_ptr(camera->getPosition()));
+		shaderMulLighting2.setVectorFloat3("directionalLight.light.ambient", glm::value_ptr(glm::vec3(0.3, 0.3, 0.3)));
+		shaderMulLighting2.setVectorFloat3("directionalLight.light.diffuse", glm::value_ptr(glm::vec3(0.7, 0.7, 0.7)));
+		shaderMulLighting2.setVectorFloat3("directionalLight.light.specular", glm::value_ptr(glm::vec3(0.9, 0.9, 0.9)));
+		shaderMulLighting2.setVectorFloat3("directionalLight.direction", glm::value_ptr(glm::vec3(-1.0, 0.0, 0.0)));
+
+
 		/*******************************************
 		 * Propiedades SpotLights
 		 *******************************************/
 		shaderMulLighting.setInt("spotLightCount", 0);
 
+		shaderMulLighting2.setInt("spotLightCount", 0);
+
 		/*******************************************
 		 * Propiedades PointLights
 		 *******************************************/
 		shaderMulLighting.setInt("pointLightCount", 0);
+
+		shaderMulLighting2.setInt("pointLightCount", 0);
 
 		/*******************************************
 		 * Cesped
@@ -1175,6 +1240,18 @@ void applicationLoop() {
 		esfera1.enableWireMode();
 		esfera1.render();
 		esfera1.enableFillMode();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textureCuboWaterID);
+		shaderMulLighting2.setInt("texture2", 0);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, textureCuboSpongeID);
+		shaderMulLighting2.setInt("texture1", 3);
+
+		cubo.setScale(glm::vec3(3.0, 3.0, 3.0));
+		cubo.setPosition(glm::vec3(8.0f, 4.0f, -10.0f));
+		cubo.render();
 
 		/******************************************
 		 * Landing pad
