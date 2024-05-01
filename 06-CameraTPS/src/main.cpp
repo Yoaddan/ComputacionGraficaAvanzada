@@ -21,6 +21,7 @@
 #include "Headers/Cylinder.h"
 #include "Headers/Box.h"
 #include "Headers/FirstPersonCamera.h"
+#include "Headers/ThirdPersonCamera.h"
 
 //GLM include
 #define GLM_FORCE_RADIANS
@@ -53,7 +54,9 @@ Shader shaderMulLighting;
 //Shader para el terreno
 Shader shaderTerrain;
 
-std::shared_ptr<FirstPersonCamera> camera(new FirstPersonCamera());
+std::shared_ptr<FirstPersonCamera> cameraFP(new FirstPersonCamera());
+std::shared_ptr<Camera> camera(new ThirdPersonCamera()); //Instancia de la camara en tercera persona. 
+float distanceFromPlayer = 10.5f;
 
 Sphere skyboxSphere(20, 20);
 Box boxCesped;
@@ -107,6 +110,8 @@ Model cowboyModelAnimate;
 Model guardianModelAnimate;
 // Cybog
 Model cyborgModelAnimate;
+// Naoya
+Model modelNaoya;
 // Terrain model instance
 Terrain terrain(-1, -1, 200, 8, "../Textures/heightmap.png");
 
@@ -145,12 +150,17 @@ glm::mat4 modelMatrixMayow = glm::mat4(1.0f);
 glm::mat4 modelMatrixCowboy = glm::mat4(1.0f);
 glm::mat4 modelMatrixGuardian = glm::mat4(1.0f);
 glm::mat4 modelMatrixCyborg = glm::mat4(1.0f);
+glm::mat4 modelMatrixNaoya = glm::mat4(1.0f);
 
+int animationNaoyaIndex = 2;
 int animationMayowIndex = 1;
 float rotDartHead = 0.0, rotDartLeftArm = 0.0, rotDartLeftHand = 0.0, rotDartRightArm = 0.0, rotDartRightHand = 0.0, rotDartLeftLeg = 0.0, rotDartRightLeg = 0.0;
 float rotBuzzHead = 0.0, rotBuzzLeftarm = 0.0, rotBuzzLeftForeArm = 0.0, rotBuzzLeftHand = 0.0;
 int modelSelected = 0;
 bool enableCountSelected = true;
+
+// Variable selectora de camaras
+bool cameraSelector = true;
 
 // Variables to animations keyframes
 bool saveFrame = false, availableSave = true;
@@ -225,6 +235,7 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action,
 void mouseCallback(GLFWwindow *window, double xpos, double ypos);
 void mouseButtonCallback(GLFWwindow *window, int button, int state, int mod);
 void init(int width, int height, std::string strTitle, bool bFullScreen);
+void scrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 void destroy();
 bool processInput(bool continueApplication = true);
 
@@ -266,6 +277,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	glfwSetCursorPosCallback(window, mouseCallback);
 	glfwSetMouseButtonCallback(window, mouseButtonCallback);
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+	glfwSetScrollCallback(window, scrollCallback);
 
 	// Init glew
 	glewExperimental = GL_TRUE;
@@ -400,11 +412,17 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	cyborgModelAnimate.loadModel("../models/cyborg/cyborg.fbx");
 	cyborgModelAnimate.setShader(&shaderMulLighting);
 
+	// Naoya
+	modelNaoya.loadModel("../models/naoya/naoya.fbx");
+	modelNaoya.setShader(&shaderMulLighting);
+
 	// Terreno
 	terrain.init();
 	terrain.setShader(&shaderTerrain);
 
-	camera->setPosition(glm::vec3(0.0, 3.0, 4.0));
+	//camera->setPosition(glm::vec3(0.0, 3.0, 4.0));
+	camera->setDistanceFromTarget(distanceFromPlayer);
+	camera->setSensitivity(1.2);
 	
 	// Carga de texturas para el skybox
 	Texture skyboxTexture = Texture("");
@@ -700,6 +718,7 @@ void destroy() {
 	cowboyModelAnimate.destroy();
 	guardianModelAnimate.destroy();
 	cyborgModelAnimate.destroy();
+	modelNaoya.destroy();
 
 	// Terrains objects Delete
 	terrain.destroy();
@@ -762,21 +781,38 @@ void mouseButtonCallback(GLFWwindow *window, int button, int state, int mod) {
 	}
 }
 
+void scrollCallback(GLFWwindow *window, double xoffset, double yoffset){
+	if(cameraSelector){
+		distanceFromPlayer -= yoffset;
+		camera->setDistanceFromTarget(distanceFromPlayer);
+	}
+}
+
 bool processInput(bool continueApplication) {
 	if (exitApp || glfwWindowShouldClose(window) != 0) {
 		return false;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera->moveFrontCamera(true, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera->moveFrontCamera(false, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera->moveRightCamera(false, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera->moveRightCamera(true, deltaTime);
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-		camera->mouseMoveCamera(offsetX, offsetY, deltaTime);
+	if(glfwGetKey(window,GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_K) == GLFW_PRESS)
+		cameraSelector = !cameraSelector;
+
+	if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && cameraSelector)
+		camera->mouseMoveCamera(offsetX, 0.0, deltaTime);
+	if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && cameraSelector)
+		camera->mouseMoveCamera(0.0, offsetY, deltaTime);
+
+	
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && !cameraSelector)
+		cameraFP->moveFrontCamera(true, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && !cameraSelector)
+		cameraFP->moveFrontCamera(false, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && !cameraSelector)
+		cameraFP->moveRightCamera(false, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && !cameraSelector)
+		cameraFP->moveRightCamera(true, deltaTime);
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !cameraSelector)
+		cameraFP->mouseMoveCamera(offsetX, offsetY, deltaTime);
+	
 	offsetX = 0;
 	offsetY = 0;
 
@@ -784,7 +820,7 @@ bool processInput(bool continueApplication) {
 	if (enableCountSelected && glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS){
 		enableCountSelected = false;
 		modelSelected++;
-		if(modelSelected > 4)
+		if(modelSelected > 5)
 			modelSelected = 0;
 		if(modelSelected == 1)
 			fileName = "../animaciones/animation_dart_joints.txt";
@@ -929,12 +965,34 @@ bool processInput(bool continueApplication) {
 		animationMayowIndex = 0;
 	}
 
+	// Controles de Naoya
+	if (modelSelected == 5 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
+		modelMatrixNaoya = glm::rotate(modelMatrixNaoya, 0.02f, glm::vec3(0, 1, 0));
+		animationNaoyaIndex = 0;
+	}
+	else if (modelSelected == 5 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
+		modelMatrixNaoya = glm::rotate(modelMatrixNaoya, -0.02f, glm::vec3(0, 1, 0));
+		animationNaoyaIndex = 0;
+	}
+	if (modelSelected == 5 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
+		modelMatrixNaoya = glm::translate(modelMatrixNaoya, glm::vec3(0.0, 0.0, 0.02));
+		animationNaoyaIndex = 0;
+	}
+	else if (modelSelected == 5 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
+		modelMatrixNaoya = glm::translate(modelMatrixNaoya, glm::vec3(0.0, 0.0, -0.02));
+		animationNaoyaIndex = 0;
+	}
+
 	glfwPollEvents();
 	return continueApplication;
 }
 
 void applicationLoop() {
 	bool psi = true;
+
+	glm::vec3 axisPlayer;
+	glm::vec3 playerPosition;
+	float anglePlayer;
 
 	modelMatrixEclipse = glm::translate(modelMatrixEclipse, glm::vec3(27.5, 0, 30.0));
 	modelMatrixEclipse = glm::rotate(modelMatrixEclipse, glm::radians(180.0f), glm::vec3(0, 1, 0));
@@ -968,6 +1026,8 @@ void applicationLoop() {
 
 	modelMatrixCyborg = glm::translate(modelMatrixCyborg, glm::vec3(5.0f, 0.05, 0.0f));
 
+	modelMatrixNaoya = glm::translate(modelMatrixNaoya, glm::vec3(15.0f, 0.03f, -10.0f));
+
 	// Variables to interpolation key frames
 	fileName = "../animaciones/animation_dart_joints.txt";
 	keyFramesDartJoints = getKeyRotFrames(fileName);
@@ -997,8 +1057,39 @@ void applicationLoop() {
 
 		glm::mat4 projection = glm::perspective(glm::radians(45.0f),
 				(float) screenWidth / (float) screenHeight, 0.01f, 100.0f);
-		glm::mat4 view = camera->getViewMatrix();
 
+		if(modelSelected == 1){
+			playerPosition = modelMatrixDart[3];
+			axisPlayer = glm::axis(glm::quat_cast(modelMatrixDart)); //Medir eje negativo o positivo
+			anglePlayer = glm::angle(glm::quat_cast(modelMatrixDart)); //Medir angulo.
+		}
+		else if(modelSelected == 5){
+			playerPosition = modelMatrixNaoya[3];
+			axisPlayer = glm::axis(glm::quat_cast(modelMatrixNaoya)); //Medir eje negativo o positivo
+			anglePlayer = glm::angle(glm::quat_cast(modelMatrixNaoya)); //Medir angulo.
+		}
+		else{
+			playerPosition = modelMatrixMayow[3];
+			axisPlayer = glm::axis(glm::quat_cast(modelMatrixMayow));
+			anglePlayer = glm::angle(glm::quat_cast(modelMatrixMayow));
+		}
+		if(std::isnan(anglePlayer))
+			anglePlayer = 0.0;
+		if(axisPlayer.y < 0)
+			anglePlayer = -anglePlayer;
+		if(modelSelected == 1)
+			anglePlayer -= glm::radians(90.0f);
+
+		camera->setCameraTarget(playerPosition);
+		camera->setAngleTarget(anglePlayer);
+		camera->updateCamera();
+
+		glm::mat4 view = glm::mat4(1);
+		if(cameraSelector){
+			view = camera->getViewMatrix();
+		}else{
+			view = cameraFP->getViewMatrix();
+		}
 		// Settea la matriz de vista y projection al shader con solo color
 		shader.setMatrix4("projection", 1, false, glm::value_ptr(projection));
 		shader.setMatrix4("view", 1, false, glm::value_ptr(view));
@@ -1338,6 +1429,19 @@ void applicationLoop() {
 		modelMatrixCyborgBody = glm::scale(modelMatrixCyborgBody, glm::vec3(0.009f));
 		cyborgModelAnimate.setAnimationIndex(1);
 		cyborgModelAnimate.render(modelMatrixCyborgBody);
+
+		glm::vec3 normal = terrain.getNormalTerrain(modelMatrixNaoya[3][0], modelMatrixNaoya[3][2]);
+		ejex = glm::vec3(modelMatrixNaoya[0]);
+		ejez = glm::normalize(glm::cross(ejex,normal));
+		ejex = glm::normalize(glm::cross(normal,ejez));
+		modelMatrixNaoya[0] = glm::vec4(ejex,0.0f);
+		modelMatrixNaoya[1] = glm::vec4(normal,0.0f);
+		modelMatrixNaoya[3][1] = terrain.getHeightTerrain(modelMatrixNaoya[3][0], modelMatrixNaoya[3][2]);
+		glm::mat4 modelMatrixNaoyaBody = glm::mat4(modelMatrixNaoya);
+		modelMatrixNaoyaBody = glm::scale(modelMatrixNaoyaBody, glm::vec3(0.005f));
+		modelNaoya.setAnimationIndex(animationNaoyaIndex);
+		modelNaoya.render(modelMatrixNaoyaBody);
+		animationNaoyaIndex = 2;
 
 		/*******************************************
 		 * Skybox
